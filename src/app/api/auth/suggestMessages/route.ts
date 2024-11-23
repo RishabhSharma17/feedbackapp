@@ -1,60 +1,33 @@
-import OpenAI from 'openai';
-import { NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+const genAi = new GoogleGenerativeAI(process.env.GOOGLE_AI as string);
 
-export const runtime = 'edge'; // Use Edge runtime for streaming
+export const runtime = 'edge';
 
-export async function POST(req: Request) {
-  const prompt = `
-    Create a list of three open-ended and engaging questions formatted as a single string. 
-    Each question should be separated by '||'. These questions are for an anonymous social messaging platform, like Qooh.me, 
-    and should be suitable for a diverse audience. Avoid personal or sensitive topics, focusing instead on universal themes 
-    that encourage friendly interaction. For example, your output should be structured like this: 
-    'What’s a hobby you’ve recently started?||If you could have dinner with any historical figure, who would it be?||What’s a simple thing that makes you happy?'. 
-    Ensure the questions are intriguing, foster curiosity, and contribute to a positive and welcoming conversational environment.
-  `;
-
+export async function GET(req:Request){
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'system', content: prompt }],
-      max_tokens: 400,
-      stream: true,
-    });
+    const prompt =
+  "Generate three open-ended and engaging questions formatted as a single string, with each question separated by '||'. Ensure the questions are suitable for an anonymous social messaging platform like Qooh.me, avoiding personal or sensitive topics. Instead, focus on Indian themes that encourage curiosity, creativity, and friendly interactions. For example, consider questions about hobbies, dreams, or intriguing hypothetical scenarios. Ensure every set of questions is unique, playful, and thought-provoking. Example output: 'What’s the most unusual thing you’ve ever eaten?||If you could live in any fictional universe, which one would it be?||What’s one small thing you’ve done recently to make someone’s day better?'. Always provide a fresh and surprising perspective with each response.";
+  
+    const dynamicContext = "Focus on themes like travel, books, or fun challenges.";
+    const fullPrompt = `${prompt} ${dynamicContext}`;
 
-    // Create a streaming response using ReadableStream
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        for await (const chunk of response) {
-          const content = chunk.choices?.[0]?.delta?.content || '';
-          controller.enqueue(encoder.encode(content));
-        }
-        controller.close();
-      },
-    });
+    const model = genAi.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-      },
+    const result = await model.generateContent(fullPrompt);
+    console.log(result);
+
+    return Response.json({
+      success: true,
+      data: result.response.candidates
+    },{
+      status:200
     });
   } catch (error) {
-    console.error('Error during OpenAI API call:', error);
-    if (error instanceof OpenAI.APIError) {
-      return NextResponse.json(
-        {
-          name: error.name,
-          status: error.status,
-          headers: error.headers,
-          message: error.message,
-        },
-        { status: error.status }
-      );
-    }
-    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
+    console.error(error);
+    return Response.json({
+      success:false,
+      message:"Error generating content",
+    },{status:500});
   }
 }
