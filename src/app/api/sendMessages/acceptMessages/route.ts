@@ -1,4 +1,4 @@
-import { dbConnect } from "@/src/lib/dbConnected";
+import { dbConnect } from "@/src/libs/dbConnected";
 import UserModel from "@/src/model/user";
 import { getServerSession } from "next-auth";
 import { User } from "next-auth";

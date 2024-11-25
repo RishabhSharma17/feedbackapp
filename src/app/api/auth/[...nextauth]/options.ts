@@ -1,6 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentailsProvider from 'next-auth/providers/credentials';
-import { dbConnect } from '@/src/lib/dbConnected';
+import { dbConnect } from '@/src/libs/dbConnected';
 import bcrypt from 'bcrypt';
 import UserModel from '@/src/model/user';
 
